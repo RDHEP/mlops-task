@@ -1,0 +1,12 @@
+2026-07-23 12:15:16,899 - INFO - Configuration loaded successfully.
+2026-07-23 12:15:16,959 - INFO - Dataset loaded successfully with 10000 rows.
+2026-07-23 12:15:16,967 - INFO - Metrics calculated successfully.
+2026-07-23 12:15:16,967 - INFO - Metrics saved to metrics.json.
+2026-07-23 14:01:15,541 - INFO - Job started.
+2026-07-23 14:01:15,541 - INFO - Configuration loaded successfully.
+2026-07-23 14:01:15,576 - INFO - Dataset loaded successfully with 10000 rows.
+2026-07-23 14:01:15,577 - INFO - Rolling mean calculated.
+2026-07-23 14:01:15,577 - INFO - Trading signals generated.
+2026-07-23 14:01:15,581 - INFO - Metrics calculated successfully.
+2026-07-23 14:01:15,582 - INFO - Metrics saved to metrics.json.
+2026-07-23 14:01:15,582 - INFO - Job completed successfully.
