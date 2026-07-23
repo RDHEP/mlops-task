@@ -55,11 +55,18 @@ def load_dataset(input_path):
     # Clean up column names
     data.columns = data.columns.str.strip().str.lower()
 
+# Validate dataset
+    if data.empty:
+        raise ValueError("Dataset is empty.")
+
+    if "close" not in data.columns:
+        raise ValueError("Required column 'close' not found.")
+
     # Convert numeric columns
     numeric_cols = ["open", "high", "low", "close", "volume_btc", "volume_usd"]
 
     for col in numeric_cols:
-        data[col] = pd.to_numeric(data[col])
+        data[col] = pd.to_numeric(data[col], errors="raise")
 
     return data
 
@@ -85,56 +92,85 @@ if __name__ == "__main__":
         format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
-    start_time = time.time()
+    try:
+        start_time = time.time()
+        logging.info("Job started.")
 
-    config = load_config(args.config)
+        config = load_config(args.config)
 
-    validate_config(config)
-    logging.info("Configuration loaded successfully.")
+        validate_config(config)
 
-    data = load_dataset(args.input)
-    logging.info(f"Dataset loaded successfully with {len(data)} rows.")
+        np.random.seed(config["seed"])
 
-    data = calculate_rolling_mean(data, config["window"])
+        logging.info("Configuration loaded successfully.")
 
-    data = generate_signal(data)
+        data = load_dataset(args.input)
+        logging.info(f"Dataset loaded successfully with {len(data)} rows.")
 
-    print("Input File :", args.input)
-    print("Config File:", args.config)
-    print("Output File:", args.output)
-    print("Log File   :", args.log_file)
+        data = calculate_rolling_mean(data, config["window"])
+        logging.info("Rolling mean calculated.")
 
-    print("\nConfiguration Loaded")
-    print("Seed    :", config["seed"])
-    print("Window  :", config["window"])
-    print("Version :", config["version"])
+        data = generate_signal(data)
+        logging.info("Trading signals generated.")
 
-    print("\nDataset Loaded Successfully!")
-    print("Rows    :", len(data))
-    print("Columns :", list(data.columns))
+        print("Input File :", args.input)
+        print("Config File:", args.config)
+        print("Output File:", args.output)
+        print("Log File   :", args.log_file)
 
-    print("\nFirst 10 rows:")
-    print(data[["close", "rolling_mean", "signal"]].head(10))
+        print("\nConfiguration Loaded")
+        print("Seed    :", config["seed"])
+        print("Window  :", config["window"])
+        print("Version :", config["version"])
 
-    rows_processed = len(data)
-    signal_rate = data["signal"].mean()
-    print("Rows Processed:", rows_processed)
-    print("Signal Rate:", signal_rate)
+        print("\nDataset Loaded Successfully!")
+        print("Rows    :", len(data))
+        print("Columns :", list(data.columns))
 
+        print("\nFirst 10 rows:")
+        print(data[["close", "rolling_mean", "signal"]].head(10))
 
-    end_time = time.time()
-    latency_ms = (end_time - start_time) * 1000
-    metrics = {
-        "rows_processed": rows_processed,
-        "signal_rate": float(round(signal_rate, 4)),
-        "latency_ms": float(round(latency_ms, 2))
-    }
-    logging.info("Metrics calculated successfully.")
-    print("\nMetrics Dictionary:")
-    print(metrics)
-    with open(args.output, "w") as file:
-        json.dump(metrics, file, indent=4)
-    logging.info(f"Metrics saved to {args.output}.")
-    print("\nMetrics saved successfully!")
-    print("\nLatency:", latency_ms, "ms")
+        rows_processed = len(data)
+        signal_rate = data["signal"].mean()
 
+        end_time = time.time()
+        latency_ms = (end_time - start_time) * 1000
+
+        metrics = {
+            "version": config["version"],
+            "rows_processed": rows_processed,
+            "metric": "signal_rate",
+            "value": round(float(signal_rate), 4),
+            "latency_ms": round(float(latency_ms), 2),
+            "seed": config["seed"],
+            "status": "success"
+        }
+
+        logging.info("Metrics calculated successfully.")
+
+        with open(args.output, "w") as file:
+            json.dump(metrics, file, indent=4)
+
+        logging.info(f"Metrics saved to {args.output}.")
+        logging.info("Job completed successfully.")
+
+        print("\nFinal Metrics JSON:")
+        print(json.dumps(metrics, indent=4))
+
+    except Exception as e:
+
+        logging.exception("Job failed.")
+
+        error_metrics = {
+            "version": config["version"] if "config" in locals() else "v1",
+            "status": "error",
+            "error_message": str(e)
+        }
+
+        with open(args.output, "w") as file:
+            json.dump(error_metrics, file, indent=4)
+
+        print("\nError Metrics:")
+        print(json.dumps(error_metrics, indent=4))
+
+        raise
